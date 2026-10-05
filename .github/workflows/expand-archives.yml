@@ -1,0 +1,33 @@
+name: Expand submitted archives
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/expand-archives.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  expand:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Expand archives
+        shell: bash
+        run: |
+          set -e
+          mkdir -p XenV2_SOURCE_SHARE XenV2_KERNEL_DRIVER_SOURCE AegisLab_UPDATED_SOURCE_SHARE
+          unzip -q XenV2_SOURCE_SHARE.zip -d XenV2_SOURCE_SHARE
+          unzip -q XenV2_KERNEL_DRIVER_SOURCE.zip -d XenV2_KERNEL_DRIVER_SOURCE
+          unzip -q AegisLab_UPDATED_SOURCE_SHARE.zip -d AegisLab_UPDATED_SOURCE_SHARE
+      - name: Commit extracted files
+        shell: bash
+        run: |
+          set -e
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add XenV2_SOURCE_SHARE XenV2_KERNEL_DRIVER_SOURCE AegisLab_UPDATED_SOURCE_SHARE
+          git commit -m 'Add extracted project files' || exit 0
+          git push
