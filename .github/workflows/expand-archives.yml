@@ -3,6 +3,8 @@ name: Expand submitted archives
 on:
   push:
     branches: [main]
+    paths:
+      - '.kernel_transfer/READY'
 
 permissions:
   contents: write
@@ -12,21 +14,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Expand archives
+      - name: Reconstruct and expand archives
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
+          cat .kernel_transfer/part*.b64 > /tmp/kernel.b64
+          base64 -d /tmp/kernel.b64 > /tmp/XenV2_KERNEL_DRIVER_SOURCE.zip
           rm -rf XenV2_SOURCE_SHARE XenV2_KERNEL_DRIVER_SOURCE AegisLab_UPDATED_SOURCE_SHARE
           mkdir -p XenV2_SOURCE_SHARE XenV2_KERNEL_DRIVER_SOURCE AegisLab_UPDATED_SOURCE_SHARE
           unzip -q XenV2_SOURCE_SHARE.zip -d XenV2_SOURCE_SHARE
-          unzip -q XenV2_KERNEL_DRIVER_SOURCE.zip -d XenV2_KERNEL_DRIVER_SOURCE
+          unzip -q /tmp/XenV2_KERNEL_DRIVER_SOURCE.zip -d XenV2_KERNEL_DRIVER_SOURCE
           unzip -q AegisLab_UPDATED_SOURCE_SHARE.zip -d AegisLab_UPDATED_SOURCE_SHARE
-      - name: Commit extracted files
+      - name: Commit extracted files and clean helpers
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add XenV2_SOURCE_SHARE XenV2_KERNEL_DRIVER_SOURCE AegisLab_UPDATED_SOURCE_SHARE
-          git commit -m 'Add extracted project files' || exit 0
+          git rm -r .kernel_transfer .archive-expand-trigger .github/workflows/expand-archives.yml
+          git commit -m 'Add extracted XenV2 and AegisLab project files'
           git push
