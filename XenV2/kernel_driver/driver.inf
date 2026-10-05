@@ -1,0 +1,48 @@
+;
+; driver.inf - XenV2-Type2 kernel driver installation
+;
+; Install:  pnputil /add-driver driver.inf /install    (requires test signing or kernel debug mode)
+; Or:       sc create XenV2Type2 type= kernel start= demand binPath= <full path>\XenV2Type2.sys
+;           sc start XenV2Type2
+;
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = System
+ClassGuid   = {4D36E97D-E325-11CE-BFC1-08002BE10318}
+Provider    = %ManufacturerName%
+PnpLockdown  = 1
+DriverVer    =
+CatalogFile  = XenV2Type2.cat
+
+[DestinationDirs]
+DefaultDestDir = 12        ; %windir%\System32\drivers
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+XenV2Type2.sys = 1,,
+
+[DefaultInstall.NT$ARCH$.10.0]
+CopyFiles = Drivers_Dir
+
+[DefaultInstall.NT$ARCH$.10.0.Services]
+AddService = XenV2Type2, %SPSVCINST_ASSOCSERVICE%, Service_Inst
+
+[Drivers_Dir]
+XenV2Type2.sys
+
+[Service_Inst]
+DisplayName    = %SvcDesc%
+ServiceType    = 1          ; SERVICE_KERNEL_DRIVER
+StartType      = 3          ; SERVICE_DEMAND_START
+ErrorControl   = 1          ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\XenV2Type2.sys
+LoadOrderGroup = Base
+
+[Strings]
+SPSVCINST_ASSOCSERVICE = 0x00000002
+ManufacturerName       = "XenV2"
+DiskName               = "XenV2-Type2 Driver Disk"
+SvcDesc                = "XenV2 Type2 Hypervisor Driver"
