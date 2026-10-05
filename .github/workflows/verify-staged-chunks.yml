@@ -1,0 +1,39 @@
+name: Verify staged archive chunks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/verify-staged-chunks.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          check() {
+            file="$1"
+            expected="$2"
+            actual="$(tr -d '[:space:]' < "$file" | sha256sum | awk '{print $1}')"
+            if [ "$actual" = "$expected" ]; then
+              echo "OK $file"
+            else
+              echo "MISMATCH $file expected=$expected actual=$actual"
+            fi
+          }
+          check .kernel_transfer/part01.b64 039092e83500678aa21b4fbc430a1c6f85511b6fd0009b2eae123f1c6e869d08
+          check .kernel_transfer/part02.b64 e2ca29663df4d5f63364cea961f5da4eb76191f92c0e2f25ad5b1a996f76b528
+          check .kernel_transfer/part03.b64 dfd1e41c3d3a0f61d6465fded86c42850e3670e1db948b3768c5ef8e34e91c7a
+          check .kernel_transfer/part04.b64 b273418a1550780212ccf9a38af8350aa45cebf71b07e209379e4997ef9a7aa0
+          check .kernel_transfer/part05.b64 3a66596979c5e002cf162d2ba40d7b76cf9cec288272b80f4512402c460a1f74
+          check .kernel_transfer/part06.b64 34ff848523cfca65cebd337d0f6ef0dbde203f30d8cc1272e265adefae3e4c26
+          check .kernel_transfer/part07.b64 0fca48671300d5f03a1647d8c003fd095ac1050bfe64d3f3e38ce29f6a8609bc
+          check .kernel_transfer/part08a.b64 ceba81cb97dfad2ca02ac1637261ca4b66106123583a157ba14723cc3fea509b
+          check .kernel_transfer/part08b.b64 7608d8af9bee0a581e70b9283703214da2ca430f0f64f1395f3aa969861dea0f
+          check .kernel_transfer/part08c.b64 7e7cd8720118024d8815b41ed4672b6c52c62d4978e09f93c6b89d6b13abf639
+          check .kernel_transfer/part09.b64 a261e3150ec7db025f05565f98aba44ff47a41fba64b93f3a8951f1dbc2a47bf
+          check .kernel_transfer/part10.b64 0dea7545de06a3b3044d5173d6cc0e917884415740bf314a3a13de3e8655e602
