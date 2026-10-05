@@ -3,8 +3,6 @@ name: Expand submitted archives
 on:
   push:
     branches: [main]
-    paths:
-      - '.github/workflows/expand-archives.yml'
 
 permissions:
   contents: write
@@ -18,6 +16,7 @@ jobs:
         shell: bash
         run: |
           set -e
+          rm -rf XenV2_SOURCE_SHARE XenV2_KERNEL_DRIVER_SOURCE AegisLab_UPDATED_SOURCE_SHARE
           mkdir -p XenV2_SOURCE_SHARE XenV2_KERNEL_DRIVER_SOURCE AegisLab_UPDATED_SOURCE_SHARE
           unzip -q XenV2_SOURCE_SHARE.zip -d XenV2_SOURCE_SHARE
           unzip -q XenV2_KERNEL_DRIVER_SOURCE.zip -d XenV2_KERNEL_DRIVER_SOURCE
