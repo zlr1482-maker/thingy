@@ -1,0 +1,40 @@
+name: Expand staged Xen archive
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/expand-staged-xen.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  expand:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reassemble and expand staged archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat             .kernel_transfer/part01.b64             .kernel_transfer/part02.b64             .kernel_transfer/part03.b64             .kernel_transfer/part04.b64             .kernel_transfer/part05.b64             .kernel_transfer/part06.b64             .kernel_transfer/part07.b64             .kernel_transfer/part08a.b64             .kernel_transfer/part08b.b64             .kernel_transfer/part08c.b64             .kernel_transfer/part09.b64             .kernel_transfer/part10.b64             > /tmp/xen-extra.b64
+
+          base64 --decode /tmp/xen-extra.b64 > /tmp/xen-extra.zip
+          mkdir -p XenV2/KernelDriver
+          unzip -q /tmp/xen-extra.zip -d XenV2/KernelDriver
+          rm -rf .kernel_transfer
+
+      - name: Commit expanded files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A XenV2/KernelDriver .kernel_transfer
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Expand remaining Xen project archive"
+          git push
