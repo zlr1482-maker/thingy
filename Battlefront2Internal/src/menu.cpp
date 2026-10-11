@@ -5,6 +5,7 @@
 #include <backends/imgui_impl_win32.h>
 
 #include <array>
+#include <cctype>
 #include <cstdlib>
 #include <string>
 #include <string_view>
@@ -65,7 +66,7 @@ bool EnvEnabled(const char* name) {
     if (_dupenv_s(&value, &len, name) != 0 || !value) return false;
     std::string v(value);
     free(value);
-    for (char& c : v) c = static_cast<char>(::tolower(static_cast<unsigned char>(c)));
+    for (char& c : v) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
     return v == "1" || v == "true" || v == "yes" || v == "on";
 }
 
