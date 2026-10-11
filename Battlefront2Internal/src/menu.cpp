@@ -1,5 +1,4 @@
 #include "menu.h"
-#include "bridge.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_dx11.h>
@@ -27,7 +26,7 @@ struct Feature {
 };
 
 std::array<Feature, 12> g_features{{
-    {"force_start_lobby", "Force Start Lobby", "Session", false, false, true,
+    {"force_start_lobby", "Force Start Lobby", "Session", false, false, false,
      "SchematicChannels/ForceStartLobby_Schematic"},
     {"hero_spawn_menu", "Hero Spawn Controls", "Heroes / Spawn", false, false, false,
      "Gameplay/GameModes/Shared/PF_GameMode_Controller"},
@@ -58,8 +57,8 @@ constexpr std::array<const char*, 6> kCategories{{
 }};
 
 bool g_initialized = false;
-bool g_open = true;
-std::string g_status = "Menu loaded. Force Start Lobby is wired through the private Kyber bridge.";
+bool g_open = false;
+std::string g_status = "Private dev menu ready.";
 
 bool EnvEnabled(const char* name) {
     char* value = nullptr;
@@ -78,23 +77,7 @@ void Dispatch(Feature& feature) {
     }
 
     if (!feature.wired) {
-        g_status = std::string(feature.label) + " is mapped to Frosty data but its runtime handler is not wired yet.";
-        return;
-    }
-
-    if (std::string_view(feature.id) == "force_start_lobby") {
-        const BridgeResult result = BridgeForceStartLobby();
-        if (result.ok) {
-            g_status = "Force Start Lobby: " + result.message;
-        } else {
-            g_status = "Force Start Lobby failed";
-            if (result.httpStatus != 0) {
-                g_status += " (HTTP " + std::to_string(result.httpStatus) + ")";
-            }
-            if (!result.message.empty()) {
-                g_status += ": " + result.message;
-            }
-        }
+        g_status = std::string(feature.label) + " is provided by the selected Frosty profile or is pending a validated local runtime handler.";
         return;
     }
 
@@ -105,7 +88,7 @@ void DrawFeature(Feature& feature) {
     ImGui::PushID(feature.id);
 
     if (feature.toggle) {
-        bool previous = feature.value;
+        const bool previous = feature.value;
         if (ImGui::Checkbox(feature.label, &feature.value) && previous != feature.value) {
             Dispatch(feature);
             if (!feature.wired) feature.value = previous;
@@ -118,7 +101,7 @@ void DrawFeature(Feature& feature) {
 
     if (ImGui::IsItemHovered()) {
         ImGui::BeginTooltip();
-        ImGui::TextUnformatted(feature.wired ? "Runtime handler: wired" : "Runtime handler: pending");
+        ImGui::TextUnformatted(feature.wired ? "Runtime handler: wired" : "Runtime source: Frosty profile / pending local handler");
         ImGui::Separator();
         ImGui::TextWrapped("Frosty reference: %s", feature.frostAsset);
         ImGui::EndTooltip();
@@ -141,6 +124,7 @@ void InitializeMenu(HWND hwnd, ID3D11Device* device, ID3D11DeviceContext* contex
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.IniFilename = nullptr;
+    io.LogFilename = nullptr;
 
     ImGui::StyleColorsDark();
     ImGui_ImplWin32_Init(hwnd);
@@ -154,13 +138,18 @@ void ShutdownMenu() {
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
     g_initialized = false;
+    g_open = false;
 }
 
-void ToggleMenu() { g_open = !g_open; }
+void ToggleMenu() {
+    if (!IsPrivateTestEnabled()) return;
+    g_open = !g_open;
+}
+
 bool IsMenuOpen() { return g_open; }
 
 void RenderMenu() {
-    if (!g_initialized || !g_open) return;
+    if (!g_initialized || !g_open || !IsPrivateTestEnabled()) return;
 
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
@@ -168,22 +157,8 @@ void RenderMenu() {
 
     ImGui::SetNextWindowSize(ImVec2(570.0f, 560.0f), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Battlefront II Private Dev Menu", &g_open, ImGuiWindowFlags_NoCollapse)) {
-        if (IsPrivateTestEnabled()) {
-            ImGui::TextColored(ImVec4(0.35f, 0.9f, 0.45f, 1.0f), "PRIVATE TEST MODE ENABLED");
-        } else {
-            ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.35f, 1.0f), "LOCKED - set BF2_PRIVATE_DEV_MENU=1 or KYBER_DEV_MODE");
-        }
-
-        ImGui::TextDisabled("Insert toggles this menu. No injector or protection-bypass logic is included.");
-        ImGui::Separator();
-
-        if (ImGui::Button("Test Kyber bridge")) {
-            const BridgeResult result = BridgeHealthCheck();
-            g_status = result.ok ? "Kyber bridge: " + result.message : "Kyber bridge unavailable: " + result.message;
-        }
-
-        ImGui::SameLine();
-        ImGui::TextDisabled("localhost:29472");
+        ImGui::TextColored(ImVec4(0.35f, 0.9f, 0.45f, 1.0f), "PRIVATE TEST MODE ENABLED");
+        ImGui::TextDisabled("Insert toggles this menu. No external service, console, or network bridge is used.");
         ImGui::Separator();
 
         if (ImGui::BeginTabBar("bf2dev-tabs")) {
@@ -191,9 +166,7 @@ void RenderMenu() {
                 if (ImGui::BeginTabItem(category)) {
                     for (auto& feature : g_features) {
                         if (std::string_view(feature.category) == category) {
-                            if (!IsPrivateTestEnabled()) ImGui::BeginDisabled();
                             DrawFeature(feature);
-                            if (!IsPrivateTestEnabled()) ImGui::EndDisabled();
                         }
                     }
                     ImGui::EndTabItem();
@@ -217,11 +190,11 @@ LRESULT HandleWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, bool& h
 
     if (msg == WM_KEYUP && wParam == VK_INSERT) {
         ToggleMenu();
-        handled = true;
+        handled = IsPrivateTestEnabled();
         return 0;
     }
 
-    if (g_open && ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam)) {
+    if (g_open && IsPrivateTestEnabled() && ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam)) {
         handled = true;
         return 1;
     }
