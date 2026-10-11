@@ -1,4 +1,5 @@
 #include "menu.h"
+#include "bridge.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_dx11.h>
@@ -26,7 +27,7 @@ struct Feature {
 };
 
 std::array<Feature, 12> g_features{{
-    {"force_start_lobby", "Force Start Lobby", "Session", false, false, false,
+    {"force_start_lobby", "Force Start Lobby", "Session", false, false, true,
      "SchematicChannels/ForceStartLobby_Schematic"},
     {"hero_spawn_menu", "Hero Spawn Controls", "Heroes / Spawn", false, false, false,
      "Gameplay/GameModes/Shared/PF_GameMode_Controller"},
@@ -58,7 +59,7 @@ constexpr std::array<const char*, 6> kCategories{{
 
 bool g_initialized = false;
 bool g_open = true;
-std::string g_status = "Menu loaded. Runtime feature handlers are not wired yet.";
+std::string g_status = "Menu loaded. Force Start Lobby is wired through the private Kyber bridge.";
 
 bool EnvEnabled(const char* name) {
     char* value = nullptr;
@@ -81,8 +82,22 @@ void Dispatch(Feature& feature) {
         return;
     }
 
-    // Runtime Frostbite/Kyber handlers are deliberately separate from the menu.
-    // When a handler is implemented it should be dispatched here by feature.id.
+    if (std::string_view(feature.id) == "force_start_lobby") {
+        const BridgeResult result = BridgeForceStartLobby();
+        if (result.ok) {
+            g_status = "Force Start Lobby: " + result.message;
+        } else {
+            g_status = "Force Start Lobby failed";
+            if (result.httpStatus != 0) {
+                g_status += " (HTTP " + std::to_string(result.httpStatus) + ")";
+            }
+            if (!result.message.empty()) {
+                g_status += ": " + result.message;
+            }
+        }
+        return;
+    }
+
     g_status = std::string("Executed ") + feature.label;
 }
 
@@ -160,6 +175,15 @@ void RenderMenu() {
         }
 
         ImGui::TextDisabled("Insert toggles this menu. No injector or protection-bypass logic is included.");
+        ImGui::Separator();
+
+        if (ImGui::Button("Test Kyber bridge")) {
+            const BridgeResult result = BridgeHealthCheck();
+            g_status = result.ok ? "Kyber bridge: " + result.message : "Kyber bridge unavailable: " + result.message;
+        }
+
+        ImGui::SameLine();
+        ImGui::TextDisabled("localhost:29472");
         ImGui::Separator();
 
         if (ImGui::BeginTabBar("bf2dev-tabs")) {
