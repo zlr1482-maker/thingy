@@ -7,6 +7,7 @@
 
 #include <atomic>
 #include <cwchar>
+#include <iterator>
 #include <string>
 
 namespace {
