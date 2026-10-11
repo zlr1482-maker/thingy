@@ -26,6 +26,7 @@ FetchContent_MakeAvailable(minhook)
 add_library(Battlefront2Internal SHARED
     src/dllmain.cpp
     src/menu.cpp
+    src/bridge.cpp
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
     ${imgui_SOURCE_DIR}/imgui_tables.cpp
@@ -48,6 +49,7 @@ target_compile_definitions(Battlefront2Internal PRIVATE
 target_link_libraries(Battlefront2Internal PRIVATE
     d3d11
     dxgi
+    winhttp
     minhook
 )
 
