@@ -1,0 +1,30 @@
+name: Battlefront II Internal Menu
+
+on:
+  push:
+    branches:
+      - battlefront2-internal-menu
+    paths:
+      - "Battlefront2Internal/**"
+      - ".github/workflows/battlefront2-internal-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure x64
+        run: cmake -S Battlefront2Internal -B Battlefront2Internal/build -A x64
+
+      - name: Build Release
+        run: cmake --build Battlefront2Internal/build --config Release --parallel
+
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: Battlefront2DevMenu
+          path: Battlefront2Internal/build/Release/Battlefront2DevMenu.dll
+          if-no-files-found: error
