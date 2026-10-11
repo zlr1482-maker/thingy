@@ -11,7 +11,10 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
     GIT_TAG master
 )
-FetchContent_MakeAvailable(imgui)
+FetchContent_GetProperties(imgui)
+if(NOT imgui_POPULATED)
+    FetchContent_Populate(imgui)
+endif()
 
 FetchContent_Declare(
     minhook
