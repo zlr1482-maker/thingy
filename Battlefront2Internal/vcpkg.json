@@ -1,0 +1,11 @@
+{
+  "name": "battlefront2-internal-menu",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "minhook",
+    {
+      "name": "imgui",
+      "features": ["dx11-binding", "win32-binding"]
+    }
+  ]
+}
