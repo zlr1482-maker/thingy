@@ -1,0 +1,27 @@
+{
+  "game": "STAR WARS Battlefront II (2017)",
+  "implementation": "Frosty",
+  "profiles": {
+    "full_debug_menu": [
+      "Hero Debug Menu 3.5.fbmod",
+      "starcardloadouts0918.fbmod"
+    ],
+    "lean_hero_game_starter": [
+      "Hero spawn menu + Game starter + Emote toggle.fbmod",
+      "starcardloadouts0918.fbmod"
+    ],
+    "force_start_only": [
+      "Force start lobby.fbmod",
+      "starcardloadouts0918.fbmod"
+    ]
+  },
+  "mutually_exclusive": [
+    "Hero Debug Menu 3.5.fbmod",
+    "Hero spawn menu + Game starter + Emote toggle.fbmod",
+    "Force start lobby.fbmod"
+  ],
+  "excluded": [
+    "Anti-Cheat_CinematicSpam.fbmod",
+    "Wallmod - Multiplayer.fbmod"
+  ]
+}
